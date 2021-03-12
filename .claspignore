@@ -1,0 +1,7 @@
+node_modules/*
+**/**
+
+# Exception
+!src/**
+!appsscript.json
+!package.json

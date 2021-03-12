@@ -1,0 +1,30 @@
+{
+    "env": {
+        "browser": true,
+        "es6": true,
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        "max-len": ["warn", { "code": 240, "tabWidth": 4 }],
+        "no-empty": ["warn", { "allowEmptyCatch": true }],
+        "no-unused-vars": "off",
+        "no-console": ["warn", { "allow": ["info", "warn", "error", "assert"] }],
+        "no-constant-condition": ["error", { "checkLoops": false }]
+    }
+}

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Material Design Lite: https://getmdl.io/components/ -->
+        <base target="_top">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-indigo.min.css" />
+        <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    </head>
+    <body>
+        <div class="frame">
+            <form id="form_export" action="#">
+                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="check_jsonIndexable">
+                    <input type="checkbox" id="check_jsonIndexable" class="mdl-checkbox__input" checked>
+                    <span class="mdl-checkbox__label">資料表名稱作為 JSON 文件索引</span>
+                </label>
+                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="check_jsonFormattable">
+                    <input type="checkbox" id="check_jsonFormattable" class="mdl-checkbox__input">
+                    <span class="mdl-checkbox__label">格式化 JSON 文件</span>
+                </label>
+                <hr />
+                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="check_tsExportable">
+                    <input type="checkbox" id="check_tsExportable" class="mdl-checkbox__input" checked>
+                    <span class="mdl-checkbox__label">輸出 TypeScript 文件 (.ts)</span>
+                </label>
+                <div id="div_classExtends" class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+                    <input class="mdl-textfield__input" type="text" id="input_classExtends" value="@/utils/langs/BaseLangFile">
+                    <label class="mdl-textfield__label" for="input_classExtends">繼承類別...</label>
+                </div>
+                <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="check_tsIndexable">
+                    <input type="checkbox" id="check_tsIndexable" class="mdl-checkbox__input" checked>
+                    <span class="mdl-checkbox__label">資料表名稱作為 TypeScript 索引</span>
+                </label>
+                <table id="table_sheets" class="mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp">
+                    <thead>
+                        <tr>
+                            <th class="mdl-data-table__cell--non-numeric">資料表</th>
+                            <th class="mdl-data-table__cell--non-numeric">
+                                <div id="main">主要</div>
+                                <div class="mdl-tooltip" for="main">
+                                    指定資料表作為語系輸出的依據
+                                </div>
+                            </th>
+                            <th class="mdl-data-table__cell--non-numeric">
+                                <div id="index">TS 定義</div>
+                                <div class="mdl-tooltip" for="index">
+                                    是否將資料表輸出於 TypeScript 或作為索引
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <? for(let i = 0, max = sheets.length; i < max; i++) { ?>
+                            <tr>
+                                <td class="mdl-data-table__cell--non-numeric"><?= sheets[i] ?></td>
+                                <td class="mdl-data-table__cell--non-numeric">
+                                    <label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="radio_main<?= i ?>">
+                                        <input type="radio" id="radio_main<?= i ?>" class="mdl-radio__button" name="main" value="<?= i ?>" <?= (i === 0) ? "checked" : "" ?>>
+                                        <span class="mdl-radio__label"></span>
+                                    </label>
+                                </td>
+                                <td class="mdl-data-table__cell--non-numeric">
+                                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="check_type<?= i ?>">
+                                        <input type="checkbox" id="check_type<?= i ?>" class="mdl-checkbox__input" name="type" checked>
+                                        <span class="mdl-checkbox__label"><?= sheets[i].split(":")[0] ?></span>
+                                    </label>
+                                </td>
+                            </tr>
+                        <? } ?>
+                    </tbody>
+                </table>
+                <div id="div_progress" class="mdl-progress mdl-js-progress"></div>
+                <div id="div_buttons">
+                    <button type="submit" id="btn_submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored">
+                        <span class="icon material-icons md-20">auto_awesome</span>
+                        <?= i18n.form.submit ?>
+                    </button>
+                    <button type="button" id="btn_download" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" disabled>
+                        <span class="icon material-icons md-20">file_download</span>
+                        <?= i18n.form.download ?>
+                    </button>
+                </div>
+            </form>
+            <div id="div_message"></div>
+            <!-- <button onclick="google.script.host.close()">CLOSE</button> -->
+        </div>
+
+        <script>
+            /** @type { HTMLFormElement } */
+            const form_export = document.getElementById("form_export");
+            /** @type { HTMLInputElement } */
+            const check_jsonIndexable = document.getElementById("check_jsonIndexable");
+            /** @type { HTMLInputElement } */
+            const check_jsonFormattable = document.getElementById("check_jsonFormattable");
+            /** @type { HTMLInputElement } */
+            const check_tsExportable = document.getElementById("check_tsExportable");
+            /** @type { HTMLInputElement } */
+            const check_tsIndexable = document.getElementById("check_tsIndexable");
+            /** @type { HTMLInputElement } */
+            const input_classExtends = document.getElementById("input_classExtends");
+            /** @type { HTMLInputElement[] } */
+            const radio_mains = Array.from(document.getElementsByName("main"));
+            /** @type { HTMLInputElement[] } */
+            const check_types = Array.from(document.getElementsByName("index"));
+            /** @type { HTMLDivElement } */
+            const div_message = document.getElementById("div_message");
+            /** @type { HTMLDivElement } */
+            const div_progress = document.getElementById("div_progress");
+            /** @type { HTMLButtonElement } */
+            const btn_download = document.getElementById("btn_download");
+
+            form_export.addEventListener("submit", onSubmit);
+            div_message.addEventListener("click", () => {
+                navigator.clipboard.writeText(div_message.textContent);
+                div_message.style.display = "none";
+            });
+            check_tsExportable.addEventListener("click", e => {
+                const disabled = input_classExtends.disabled = check_tsIndexable.disabled = !e.currentTarget.checked;
+                disabled ? input_classExtends.parentElement.classList.add("disabled") : input_classExtends.parentElement.classList.remove("disabled");
+                disabled ? check_tsIndexable.parentElement.classList.add("disabled") : check_tsIndexable.parentElement.classList.remove("disabled");
+
+                check_types.forEach(v => {
+                    v.disabled = disabled;
+                    disabled ? v.parentElement.classList.add("disabled") : v.parentElement.classList.remove("disabled");
+                });
+            });
+
+            setTimeout(() => {
+                /** @type { HTMLLabelElement[] } */
+                const label_selections = Array.from(document.querySelectorAll(`#table_sheets .mdl-data-table__select`));
+                label_selections[0].querySelector(`input[type="checkbox"]`).click();
+            }, 200);
+
+            /**
+             * Handles the form when submitted
+             * @param e {Event}
+             */
+            function onSubmit(e) {
+                /** @type { HTMLTableRowElement[] } */
+                const check_selections = Array.from(document.querySelectorAll(`#table_sheets tbody tr`));
+                const data = {
+                    json: {
+                        indexable: check_jsonIndexable.checked,
+                        formattable: check_jsonFormattable.checked,
+                    },
+                    ts: {
+                        exportable: check_tsExportable.checked,
+                        indexable: check_tsIndexable.checked,
+                        extension: input_classExtends.value,
+                    },
+                    sheets: check_selections.map(v => ({
+                        enabled: v.classList.contains("is-selected"),
+                        name: v.getElementsByTagName("td")[1].textContent,
+                        main: v.querySelector(`input[name="main"]`).checked,
+                        type: v.querySelector(`input[name="type"]`).checked,
+                    })),
+                };
+
+                e.preventDefault();
+                setMessage("執行中，請勿修改文件", "警告", "rgb(255,152,0)");
+                div_progress.classList.add("mdl-progress__indeterminate");
+                btn_download.disabled = true;
+
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if (res.message) {
+                            if (res.download) {
+                                btn_download.disabled = false;
+                                res.download && (btn_download.onclick = () => window.open(res.download));
+                            }
+                            setMessage(res.message, "成功", "rgb(139, 195, 74)");
+                        }
+                        else setMessage(res, "成功", "rgb(139, 195, 74)");
+                    })
+                    .withFailureHandler(error => setMessage(error, "失敗", "rgb(244,67,54)"))
+                    .exportFiles(data);
+            }
+
+            function setMessage(html, title, color) {
+                div_message.innerHTML = (title ? `<b>[ ${ title } ]</b><br/>` : "") + html;
+                div_message.style.backgroundColor = color;
+                div_message.style.display = "block";
+                div_progress.classList.remove("mdl-progress__indeterminate");
+            }
+        </script>
+        <style>
+            body {
+                position: relative;
+                font-family: 'Roboto', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+            }
+            div.frame {
+                padding: 10px;
+            }
+
+            #div_message {
+                cursor: pointer;
+                display: none;
+                margin: 25px 5px;
+                padding: 5px 10px;
+                width: calc(100% - 30px);
+
+                text-align: center;
+                font-size: 14px;
+                color: white;
+                user-select: none;
+                word-wrap: break-word;
+
+                border-radius: 5px;
+                background: #808080;
+                box-shadow: 0 2px 2px 0 rgb(0 0 0 / 14%), 0 3px 1px -2px rgb(0 0 0 / 20%), 0 1px 5px 0 rgb(0 0 0 / 12%);
+            }
+            #div_progress {
+                height: 1px;
+                margin: 20px 0;
+            }
+            #div_progress.mdl-progress__indeterminate {
+                height: 5px;
+            }
+            #div_classExtends {
+                width: calc(100% - 25px);
+                margin-left: 25px;
+                margin-bottom: -5px;
+            }
+            #div_buttons {
+                text-align: right;
+            }
+            #div_buttons button {
+                margin-right: 5px;
+            }
+
+            .disabled {
+                opacity: 0.5;
+            }
+            .mdl-tooltip {
+                max-width: 120px;
+                white-space: normal;
+            }
+
+            /* Rules for sizing the table */
+            .mdl-data-table {
+                margin: 10px 0;
+                width: 100% !important;
+            }
+            .mdl-data-table th {
+                padding: 5px 5px !important;
+                height: unset !important;
+            }
+            .mdl-data-table td {
+                font-size: 16px !important;
+                padding: 5px 5px !important;
+            }
+
+            /* Rules for sizing the icon */
+            .material-icons.md-20 { font-size: 20px; }
+        </style>
+    </body>
+</html>
